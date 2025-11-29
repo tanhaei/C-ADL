@@ -1,0 +1,83 @@
+{
+  "name": "c-adl-extension",
+  "displayName": "C-ADL Language Support",
+  "description": "Causal Architecture Description Language support for VS Code (Syntax Highlighting, Linter, Causal Inference)",
+  "version": "0.1.0",
+  "publisher": "c-adl-team",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onLanguage:cadl",
+    "onLanguage:yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "cadl",
+        "aliases": [
+          "C-ADL",
+          "cadl"
+        ],
+        "extensions": [
+          ".cadl",
+          ".yaml"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cadl",
+        "scopeName": "source.cadl",
+        "path": "./syntaxes/cadl.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "cadl.compile",
+        "title": "C-ADL: Compile and Verify Model"
+      },
+      {
+        "command": "cadl.visualize",
+        "title": "C-ADL: Open Causal Visualizer"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "cadl.compile",
+          "group": "navigation",
+          "when": "resourceLangId == cadl || resourceLangId == yaml"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.2.5",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.3",
+    "@vscode/test-electron": "^2.3.2"
+  }
+}
