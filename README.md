@@ -128,4 +128,12 @@ This project is licensed under the MIT License \- see the [LICENSE](https://www.
 
 ## **🔗 Citation**
 
-To apear!
+If you use C-ADL in your research, please cite our paper:
+
+@article{Tanhaei2025CADL,  
+  title={C-ADL: A Causal Architecture Description Language for Root-Cause Analysis and Counterfactual Reasoning},  
+  author={Tanhaei, Mohammad},  
+  journal={Information and Software Technology},  
+  year={2025}  
+}
+
