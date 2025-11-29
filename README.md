@@ -19,6 +19,7 @@ This repository contains the official toolchain, benchmarks, and evaluation data
 
 The project is organized as follows to support the complete toolchain:
 
+```
 C-ADL-Workbench/  
 ├── ide-extension/           \# VS Code Extension source code  
 │   ├── package.json  
@@ -40,7 +41,7 @@ C-ADL-Workbench/
 ├── tests/                   \# Integration tests  
 │   └── test\_inference.py    \# pgmpy verification tests  
 └── visualization/           \# React/D3.js interactive dashboard
-
+```
 ## **🛠️ Installation & Setup**
 
 ### **Prerequisites**
@@ -51,17 +52,21 @@ C-ADL-Workbench/
 
 ### **1\. Install the Compiler & Solvers**
 
+```
 git clone https://github.com/tanhaei/C-ADL.git
 cd C-ADL/compiler  
 pip install \-r requirements.txt
+```
 
 ### **2\. Install the VS Code Extension**
 
 You can install the .vsix package from the releases folder or build it from source:
 
+```
 cd ide-extension  
 npm install  
-npm run compile  
+npm run compile
+```
 \# Press F5 in VS Code to launch the extension Development Host
 
 ## **📖 Usage Example**
@@ -70,6 +75,7 @@ npm run compile
 
 Create a .cadl or .yaml file to describe your architecture and causal links. Here is a simplified snippet from the **TrainTicket** benchmark:
 
+```
 name: TrainTicket-Causal-Model  
 components:  
   \- id: auth\_service  
@@ -87,17 +93,20 @@ counterfactuals:
   \- id: cf\_analysis\_01  
     intervention: do(payment.available=false)  
     query: P(order.success | do(payment.available=false))
+```
 
 ### **Running Analysis**
 
 Use the CLI to compile and query the model:
 
+```
 \# Verify structural constraints  
 python cadl\_compiler.py check \--model examples/trainticket.yaml \--backend alloy
 
 \# Run probabilistic inference  
 python cadl\_compiler.py query \--model examples/trainticket.yaml \--id cf\_analysis\_01  
 \# Output: P(order.success | do(payment.available=false)) \= 0.024
+```
 
 ## **📊 Evaluation & Benchmarks**
 
@@ -130,10 +139,5 @@ This project is licensed under the MIT License \- see the [LICENSE](https://www.
 
 If you use C-ADL in your research, please cite our paper:
 
-@article{Tanhaei2025CADL,  
-  title={C-ADL: A Causal Architecture Description Language for Root-Cause Analysis and Counterfactual Reasoning},  
-  author={Tanhaei, Mohammad},  
-  journal={Information and Software Technology},  
-  year={2025}  
-}
+To Apear!
 
