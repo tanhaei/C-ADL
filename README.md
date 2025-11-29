@@ -118,8 +118,10 @@ We evaluated C-ADL on three systems. The models and data are available in the be
 | MLOps Pipeline | 35 | 59 | GitLab Production Data |  
 To reproduce the precision results (83% P@1) reported in the paper:
 
+```
 cd tests  
 python run\_benchmark\_eval.py \--dataset deathstarbench
+```
 
 ## **🤝 Contributing**
 
