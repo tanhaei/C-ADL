@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-ADL Causal Workbench</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        #mynetwork { height: 600px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .node-selected { border: 2px solid #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <div class="container mx-auto p-6">
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl font-bold text-blue-800">C-ADL Workbench</h1>
+            <p class="text-gray-600">Design-time Causal Inference & Counterfactual Reasoning Visualizer</p>
+        </header>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Sidebar: Controls -->
+            <div class="col-span-3 bg-white p-4 rounded shadow">
+                <h3 class="font-bold text-lg mb-4">Model Properties</h3>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">Active Model</label>
+                    <select class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                        <option>TrainTicket Benchmark</option>
+                        <option>IoT Gateway</option>
+                        <option>MLOps Pipeline</option>
+                    </select>
+                </div>
+
+                <div class="mb-4 border-t pt-4">
+                    <h4 class="font-semibold text-blue-600">Intervention (Do-Calculus)</h4>
+                    <p class="text-xs text-gray-500 mb-2">Click a node to apply 'do' operator.</p>
+                    <div id="intervention-panel" class="hidden">
+                        <p class="text-sm">Target: <span id="selected-node" class="font-mono font-bold"></span></p>
+                        <button onclick="applyIntervention(true)" class="mt-2 w-full bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 text-sm">
+                            do(failure=True)
+                        </button>
+                        <button onclick="applyIntervention(false)" class="mt-2 w-full bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 text-sm">
+                            do(failure=False)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4 border-t pt-4">
+                    <h4 class="font-semibold text-purple-600">Counterfactual Query</h4>
+                    <div class="bg-gray-100 p-2 rounded text-xs font-mono mt-2">
+                        P(Order.Success | <br> do(Payment=False))
+                    </div>
+                    <button class="mt-2 w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700">
+                        Evaluate Query
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main: Graph Visualization -->
+            <div class="col-span-9 bg-white p-4 rounded shadow">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-lg">Causal Graph (DAG)</h3>
+                    <span class="text-xs text-gray-400">Rendering Engine: vis.js</span>
+                </div>
+                <div id="mynetwork"></div>
+                <div id="logs" class="mt-4 p-3 bg-gray-900 text-green-400 font-mono text-sm h-32 overflow-y-auto rounded">
+                    > System initialized.<br>
+                    > Loaded model: TrainTicket-Causal-Model (v1.2)<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // --- Mock Data simulating parsed C-ADL YAML ---
+        const nodesData = [
+            { id: 1, label: 'Auth Service\n(Bernoulli 0.05)', color: '#97c2fc', shape: 'box' },
+            { id: 2, label: 'Order Service\n(Bernoulli 0.01)', color: '#97c2fc', shape: 'box' },
+            { id: 3, label: 'UI Dashboard\n(Latency)', color: '#fbbf24', shape: 'ellipse' },
+            { id: 4, label: 'Database\n(Primary)', color: '#fab1a0', shape: 'database' },
+            { id: 5, label: 'Network\nCongestion', color: '#e2e8f0', shape: 'diamond', font: {color: '#666'} } // Exogenous
+        ];
+
+        const edgesData = [
+            { from: 1, to: 3, arrows: 'to', label: 'causes delay' },
+            { from: 4, to: 2, arrows: 'to', label: 'timeout' },
+            { from: 5, to: 1, arrows: 'to', dashes: true, label: 'confounder' },
+            { from: 5, to: 2, arrows: 'to', dashes: true }
+        ];
+
+        // --- Vis.js Initialization ---
+        const nodes = new vis.DataSet(nodesData);
+        const edges = new vis.DataSet(edgesData);
+        const container = document.getElementById('mynetwork');
+        const data = { nodes: nodes, edges: edges };
+        const options = {
+            physics: { enabled: true, solver: 'forceAtlas2Based' },
+            layout: { randomSeed: 2 },
+            interaction: { hover: true }
+        };
+        const network = new vis.Network(container, data, options);
+
+        // --- Interaction Logic ---
+        network.on("click", function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const nodeLabel = nodesData.find(n => n.id === nodeId).label.split('\n')[0];
+                
+                document.getElementById('intervention-panel').classList.remove('hidden');
+                document.getElementById('selected-node').innerText = nodeLabel;
+                document.getElementById('selected-node').dataset.id = nodeId;
+            } else {
+                document.getElementById('intervention-panel').classList.add('hidden');
+            }
+        });
+
+        function log(msg) {
+            const consoleDiv = document.getElementById('logs');
+            consoleDiv.innerHTML += `> ${msg}<br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        function applyIntervention(value) {
+            const nodeId = parseInt(document.getElementById('selected-node').dataset.id);
+            const node = nodes.get(nodeId);
+            const valText = value ? "TRUE" : "FALSE";
+            
+            log(`Applying intervention: do(${node.label.split('\n')[0]} = ${valText})`);
+            
+            // Visual feedback for Pearl's Mutilation (Removing incoming edges)
+            const parentEdges = edges.get().filter(e => e.to === nodeId);
+            
+            if (parentEdges.length > 0) {
+                log(`... Mutilating graph: Removing ${parentEdges.length} incoming causal links.`);
+                edges.remove(parentEdges.map(e => e.id));
+            }
+
+            // Update node style to show fixed value
+            nodes.update({
+                id: nodeId, 
+                color: value ? '#ff7675' : '#55efc4',
+                borderWidth: 3,
+                label: `${node.label.split('\n')[0]}\n[FIXED: ${valText}]`
+            });
+            
+            log(`... Recalculating posterior probabilities (simulated).`);
+            setTimeout(() => {
+                log(`SUCCESS: Propagated causal effects.`);
+            }, 500);
+        }
+    </script>
+</body>
+</html>

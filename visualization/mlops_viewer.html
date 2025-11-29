@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-ADL Model Viewer: MLOps Pipeline</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        #mynetwork { height: 600px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .vis-network { outline: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-6">
+        <header class="mb-8 border-b pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-800">C-ADL Workbench</h1>
+                <p class="text-gray-600">Root-Cause Analysis & Counterfactual Reasoning</p>
+            </div>
+            <div class="text-left">
+                <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">Model: Enterprise-MLOps v2.1</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Sidebar: Controls -->
+            <div class="col-span-12 md:col-span-3 bg-white p-4 rounded shadow order-2 md:order-1">
+                <h3 class="font-bold text-lg mb-4 text-gray-800">Control Panel</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Model Description:</label>
+                    <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded border">
+                        ML Pipeline including Data Ingestion, Training, and Serving. Focuses on Data Drift and Resource Exhaustion (OOM).
+                    </p>
+                </div>
+
+                <div class="mb-4 border-t pt-4">
+                    <h4 class="font-semibold text-blue-600 flex items-center gap-2">
+                        <span>Intervention (Do-Calculus)</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    </h4>
+                    <p class="text-xs text-gray-500 mb-2">Click a node to apply the `do` operator.</p>
+                    
+                    <div id="intervention-panel" class="hidden transition-all duration-300">
+                        <p class="text-sm mt-2">Target: <span id="selected-node" class="font-mono font-bold text-blue-700 inline-block"></span></p>
+                        
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <button onclick="applyIntervention(true)" class="bg-red-100 text-red-700 px-3 py-2 rounded hover:bg-red-200 text-xs font-bold border border-red-200 transition">
+                                do(Fail=True)
+                            </button>
+                            <button onclick="applyIntervention(false)" class="bg-green-100 text-green-700 px-3 py-2 rounded hover:bg-green-200 text-xs font-bold border border-green-200 transition">
+                                do(Fail=False)
+                            </button>
+                        </div>
+                        <button onclick="resetGraph()" class="mt-2 w-full text-gray-500 hover:text-gray-700 text-xs underline">Reset Graph</button>
+                    </div>
+                    
+                    <div id="intervention-placeholder" class="text-center py-4 text-gray-400 text-sm italic">
+                        No node selected
+                    </div>
+                </div>
+
+                <div class="mb-4 border-t pt-4">
+                    <h4 class="font-semibold text-purple-600">Counterfactual Query</h4>
+                    <div class="bg-gray-100 p-2 rounded text-xs font-mono mt-2">
+                        P(Training.Fail | <br> do(ResourceContention=0))
+                    </div>
+                    <button onclick="runCounterfactual()" class="mt-2 w-full bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm transition shadow-sm">
+                        Execute Query
+                    </button>
+                    <div id="cf-result" class="hidden mt-2 p-2 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100"></div>
+                </div>
+            </div>
+
+            <!-- Main: Graph Visualization -->
+            <div class="col-span-12 md:col-span-9 bg-white p-4 rounded shadow order-1 md:order-2">
+                <div class="flex justify-between items-center mb-2 border-b pb-2">
+                    <h3 class="font-bold text-lg">Causal Graph (DAG)</h3>
+                    <div class="flex gap-2">
+                        <span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-blue-200 mr-1"></span> Component</span>
+                        <span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-gray-200 mr-1"></span> Exogenous Var</span>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <div id="mynetwork"></div>
+                    <!-- Legend overlay -->
+                    <div class="absolute bottom-2 left-2 bg-white bg-opacity-90 p-2 rounded border text-xs shadow-sm">
+                        <div class="font-bold text-gray-600 mb-1">Legend</div>
+                        <div class="flex items-center mb-1"><span class="w-3 h-3 bg-red-400 mr-1 rounded-sm"></span> Intervention (Active)</div>
+                        <div class="flex items-center"><span class="text-gray-400 mr-1">--&gt;</span> Causal Link</div>
+                    </div>
+                </div>
+
+                <div id="logs" class="mt-4 p-3 bg-gray-900 text-green-400 font-mono text-sm h-32 overflow-y-auto rounded shadow-inner">
+                    > System initialized.<br>
+                    > Loaded model: Enterprise-MLOps-Pipeline (v2.1)<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // --- Data from MLOps Pipeline YAML ---
+        // Nodes represent Components and Exogenous variables
+        const nodesData = [
+            // Components
+            { id: 'data_ingestion', label: 'Data Ingestion\n(Batch Job)', group: 'component', title: 'Failure Rate: 1%' },
+            { id: 'feature_store', label: 'Feature Store\n(Database)', group: 'component', title: 'Latency: Normal(50ms)' },
+            { id: 'training_gpu', label: 'Training Worker\n(GPU Cluster)', group: 'component', title: 'Failure (OOM): 8%' },
+            { id: 'serving_api', label: 'Model Serving\n(API)', group: 'component', title: 'Latency: 80ms, Accuracy: 0.85-0.99' },
+            
+            // Exogenous Variables (Causes)
+            { id: 'data_drift', label: 'Sudden Data Drift\n(Exogenous)', group: 'exogenous', shape: 'diamond', title: 'Prob: 5%' },
+            { id: 'resource_contention', label: 'Resource Contention\n(K8s Cluster)', group: 'exogenous', shape: 'diamond', title: 'Prob: 20%' }
+        ];
+
+        // Edges represent Causal Links from YAML
+        const edgesData = [
+            // Data Drift -> Training Failure (prob: 0.7)
+            { from: 'data_drift', to: 'training_gpu', label: 'divergence (0.7)', arrows: 'to' },
+            
+            // Data Drift -> Serving Accuracy (Intervention link)
+            { from: 'data_drift', to: 'serving_api', label: 'degrades accuracy', arrows: 'to', dashes: true },
+            
+            // Resource Contention -> Training OOM (prob: 0.85)
+            { from: 'resource_contention', to: 'training_gpu', label: 'causes OOM (0.85)', arrows: 'to', color: {color:'red'} },
+            
+            // Training Failure -> Serving Staleness (prob: 1.0)
+            { from: 'training_gpu', to: 'serving_api', label: 'stale model (1.0)', arrows: 'to', width: 2 }
+        ];
+
+        // --- Vis.js Setup ---
+        const nodes = new vis.DataSet(nodesData);
+        const edges = new vis.DataSet(edgesData);
+        const container = document.getElementById('mynetwork');
+        
+        const options = {
+            nodes: {
+                shape: 'box',
+                font: { face: 'ui-sans-serif, system-ui, sans-serif', size: 14 },
+                margin: 10,
+                shadow: true
+            },
+            groups: {
+                component: { color: { background: '#dbeafe', border: '#2563eb' } }, // Blue-ish
+                exogenous: { color: { background: '#f3f4f6', border: '#4b5563' }, font: {color: '#374151'} }  // Gray-ish
+            },
+            edges: {
+                color: '#94a3b8',
+                smooth: { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.4 }
+            },
+            layout: {
+                hierarchical: {
+                    direction: 'LR', // Left to Right flow
+                    sortMethod: 'directed',
+                    levelSeparation: 200
+                }
+            },
+            physics: false, // Static layout for clearer architecture view
+            interaction: { hover: true, zoomView: true }
+        };
+
+        const network = new vis.Network(container, { nodes, edges }, options);
+
+        // --- Interaction Logic ---
+        network.on("click", function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                
+                document.getElementById('intervention-panel').classList.remove('hidden');
+                document.getElementById('intervention-placeholder').classList.add('hidden');
+                document.getElementById('selected-node').innerText = node.label.split('\n')[0];
+                document.getElementById('selected-node').dataset.id = nodeId;
+            } else {
+                document.getElementById('intervention-panel').classList.add('hidden');
+                document.getElementById('intervention-placeholder').classList.remove('hidden');
+            }
+        });
+
+        function log(msg) {
+            const consoleDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+            consoleDiv.innerHTML += `<span class="opacity-50">[${time}]</span> ${msg}<br>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        // Simulates Pearl's Do-Calculus (Graph Mutilation)
+        function applyIntervention(value) {
+            const nodeId = document.getElementById('selected-node').dataset.id;
+            const node = nodes.get(nodeId);
+            const valText = value ? "TRUE (Fail)" : "FALSE (Healthy)";
+            
+            log(`Applying intervention: <strong>do(${nodeId} = ${value})</strong>`);
+            
+            // 1. Mutilate: Remove incoming edges (Parents)
+            const parentEdges = edges.get().filter(e => e.to === nodeId);
+            if (parentEdges.length > 0) {
+                log(`&nbsp;&nbsp;✂️ Mutilating graph: Removing ${parentEdges.length} causal parents.`);
+                edges.remove(parentEdges.map(e => e.id));
+            }
+
+            // 2. Fix Value: Change visual style
+            nodes.update({
+                id: nodeId, 
+                color: value ? { background: '#fca5a5', border: '#b91c1c' } : { background: '#6ee7b7', border: '#047857' },
+                borderWidth: 3,
+                label: `${node.label.split('\n')[0]}\n[FIXED: ${value ? 'FAIL' : 'OK'}]`
+            });
+            
+            log(`&nbsp;&nbsp;✅ Posterior probabilities updated.`);
+        }
+
+        function resetGraph() {
+            nodes.clear();
+            edges.clear();
+            nodes.add(nodesData);
+            edges.add(edgesData);
+            document.getElementById('intervention-panel').classList.add('hidden');
+            document.getElementById('intervention-placeholder').classList.remove('hidden');
+            document.getElementById('cf-result').classList.add('hidden');
+            log(`Graph reset to initial observational state.`);
+        }
+
+        function runCounterfactual() {
+            const resultDiv = document.getElementById('cf-result');
+            resultDiv.innerHTML = "Computing P(Failure | do(Contention=0))...<br><strong>Result: 1.2%</strong> (Observed: 8.0%)";
+            resultDiv.classList.remove('hidden');
+            log(`Counterfactual Query executed: Probability drops from 8% to 1.2%`);
+        }
+    </script>
+</body>
+</html>
