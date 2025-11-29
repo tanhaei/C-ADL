@@ -1,0 +1,74 @@
+name: SmartHome-IoT-Gateway
+version: 1.0
+description: >
+  A causal model representing an Edge IoT Gateway collecting data from 
+  sensors (Zigbee/WiFi) and forwarding it to the cloud. Focuses on 
+  message loss and latency at the edge.
+
+components:
+  - id: sensor_cluster_temp
+    type: IoT_Device
+    failure_rate: Bernoulli(0.02) # Battery drain or disconnect
+    
+  - id: sensor_cluster_motion
+    type: IoT_Device
+    failure_rate: Bernoulli(0.01)
+
+  - id: edge_gateway_broker
+    type: Edge_Node
+    # Probability of queue overflow based on load
+    failure_rate: Bernoulli(0.05) 
+    processing_latency: Normal(15, 5) ms
+
+  - id: cloud_uplink_service
+    type: Cloud_Connector
+    latency: LogNormal(4.5, 0.5) ms # Heavy tail distribution
+
+exogenous:
+  - id: rf_interference
+    distribution: Bernoulli(0.15)
+    description: "2.4GHz interference from microwaves or neighbors affecting WiFi/Zigbee"
+
+  - id: firmware_update_process
+    distribution: Bernoulli(0.01)
+    description: "Scheduled background updates consuming CPU resources"
+
+causal_links:
+  # RF Interference causes sensor packet loss (Confounder)
+  - source: rf_interference
+    target: sensor_cluster_temp.failure
+    prob: 0.6
+  
+  - source: rf_interference
+    target: sensor_cluster_motion.failure
+    prob: 0.6
+
+  # Sensor failures propagate to Gateway data gaps
+  - source: sensor_cluster_temp.failure
+    target: edge_gateway_broker.data_loss
+    prob: 1.0
+
+  # Firmware update causes Gateway processing spikes
+  - source: firmware_update_process
+    target: edge_gateway_broker.processing_latency
+    # Intervention logic: If updating, latency spikes significantly
+    do: do(firmware_update_process=1) -> edge_gateway_broker.processing_latency=Normal(500, 100)
+
+  # Gateway overload causes Cloud Uplink timeout
+  - source: edge_gateway_broker.processing_latency
+    target: cloud_uplink_service.timeout
+    description: "If gateway takes too long (>200ms), uplink times out"
+    # Structural equation mapping latency to binary failure
+    functional_form: "cloud_uplink_service.timeout = (edge_gateway_broker.processing_latency > 200)"
+
+counterfactuals:
+  - id: cf_missed_alarm
+    description: "Given a missed motion alarm during high interference, would it have been delivered if we used a wired connection?"
+    # Intervention: Eliminating RF interference impact (simulating wired)
+    intervention: do(rf_interference=0)
+    query: P(edge_gateway_broker.data_loss | do(rf_interference=0))
+
+  - id: cf_gateway_sizing
+    description: "Would the uplink have timed out if the firmware update wasn't running?"
+    intervention: do(firmware_update_process=0)
+    query: P(cloud_uplink_service.timeout | do(firmware_update_process=0))

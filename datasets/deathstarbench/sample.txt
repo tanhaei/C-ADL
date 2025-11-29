@@ -1,0 +1,11 @@
+trace_id,timestamp,service,metric,value,anomaly_label
+t-1001,1716300001,ts-auth-service,cpu_usage,45.2,0
+t-1001,1716300002,ts-order-service,latency,120,0
+t-1001,1716300003,ts-ui-dashboard,response_time,210,0
+t-1002,1716300015,ts-auth-service,cpu_usage,98.5,1
+t-1002,1716300016,ts-order-service,latency,115,0
+t-1002,1716300017,ts-ui-dashboard,response_time,5000,1
+t-1003,1716300025,ts-auth-service,failure_count,1,1
+t-1003,1716300026,ts-ui-dashboard,error_rate,1.0,1
+t-1004,1716300040,ts-payment-service,latency,45,0
+t-1004,1716300041,ts-order-service,success_rate,1.0,0

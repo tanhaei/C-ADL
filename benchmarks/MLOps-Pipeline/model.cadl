@@ -1,0 +1,67 @@
+name: Enterprise-MLOps-Pipeline
+version: 2.1
+description: >
+  Models a standard machine learning CI/CD pipeline including data ingestion, 
+  training, and model serving. Focuses on data drift and resource exhaustion.
+
+components:
+  - id: data_ingestion_job
+    type: Batch_Job
+    failure_rate: Bernoulli(0.01) # Source data unavailability
+
+  - id: feature_store
+    type: Database
+    latency: Normal(50, 10) ms
+
+  - id: training_worker_gpu
+    type: Compute_Resource
+    # Probability of OOM (Out Of Memory)
+    failure_rate: Bernoulli(0.08) 
+
+  - id: model_serving_api
+    type: Microservice
+    latency: Normal(80, 20) ms
+    accuracy: Uniform(0.85, 0.99)
+
+exogenous:
+  - id: sudden_data_drift
+    distribution: Bernoulli(0.05)
+    description: "Significant shift in input data distribution (concept drift)"
+
+  - id: cluster_resource_contention
+    distribution: Bernoulli(0.2)
+    description: "Other jobs fighting for GPU/Memory on the K8s cluster"
+
+causal_links:
+  # Data Drift affects Training Convergence (failure)
+  - source: sudden_data_drift
+    target: training_worker_gpu.failure
+    prob: 0.7
+    description: "Drift causes training loss to diverge/NaN"
+
+  # Data Drift also affects Serving Accuracy (if training succeeded)
+  - source: sudden_data_drift
+    target: model_serving_api.accuracy
+    do: do(sudden_data_drift=1) -> model_serving_api.accuracy=Uniform(0.5, 0.7)
+
+  # Resource Contention causes Training OOM
+  - source: cluster_resource_contention
+    target: training_worker_gpu.failure
+    prob: 0.85
+
+  # Training Failure prevents Model Deployment (Serving uses stale model)
+  - source: training_worker_gpu.failure
+    target: model_serving_api.staleness
+    prob: 1.0
+
+counterfactuals:
+  - id: cf_training_crash
+    description: "Given the training job crashed with OOM, would it have succeeded if we had isolated the cluster?"
+    intervention: do(cluster_resource_contention=0)
+    query: P(training_worker_gpu.failure | do(cluster_resource_contention=0))
+
+  - id: cf_bad_prediction
+    description: "Given low model accuracy, was it caused by data drift?"
+    # Here we query the probability of the cause given the effect (Reverse inference)
+    # Note: This is diagnostic, but formatted as a probability query
+    query: P(sudden_data_drift | model_serving_api.accuracy < 0.7)

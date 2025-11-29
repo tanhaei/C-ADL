@@ -1,0 +1,55 @@
+name: TrainTicket-Microservices-Benchmark
+version: 1.2
+description: >
+  A simplified causal model of the TrainTicket benchmark focusing on 
+  the authentication and booking flow failures.
+
+components:
+  - id: ts_auth_service
+    type: Service
+    failure_rate: Bernoulli(0.05) # 5% intrinsic failure rate
+    
+  - id: ts_order_service
+    type: Service
+    failure_rate: Bernoulli(0.01)
+    
+  - id: ts_ui_dashboard
+    type: Frontend
+    latency: Normal(200, 50) ms
+
+  - id: database_primary
+    type: Infrastructure
+    failure_rate: Bernoulli(0.001)
+
+exogenous:
+  - id: network_congestion
+    distribution: Bernoulli(0.1)
+    description: "External network latency spikes affecting all inter-service calls"
+
+causal_links:
+  # Auth failure causes Login Latency spikes
+  - source: ts_auth_service.failure
+    target: ts_ui_dashboard.login_latency
+    description: "If Auth fails, UI retries cause latency"
+    prob: 0.95
+
+  # DB failure causes Order Service failure
+  - source: database_primary.failure
+    target: ts_order_service.failure
+    do: do(database_primary.failure=1) -> ts_order_service.failure=1
+
+  # Congestion affects Auth (Confounder)
+  - source: network_congestion
+    target: ts_auth_service.failure
+    prob: 0.3
+
+  # Congestion affects Order (Confounder)
+  - source: network_congestion
+    target: ts_order_service.failure
+    prob: 0.4
+
+counterfactuals:
+  - id: cf_incident_2024_08
+    description: "Would the UI have timed out if we had scaled the Auth service?"
+    intervention: do(ts_auth_service.capacity=high)
+    query: P(ts_ui_dashboard.timeout | do(ts_auth_service.capacity=high))
