@@ -141,5 +141,5 @@ This project is licensed under the MIT License \- see the [LICENSE](https://www.
 
 If you use C-ADL in your research, please cite our paper:
 
-To Apear!
+To Appear!
 
