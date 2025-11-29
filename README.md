@@ -51,7 +51,7 @@ C-ADL-Workbench/
 
 ### **1\. Install the Compiler & Solvers**
 
-git clone \[https://github.com/tanhaei/C-ADL.git\](https://github.com/tanhaei/C-ADL.git)  
+git clone https://github.com/tanhaei/C-ADL.git
 cd C-ADL/compiler  
 pip install \-r requirements.txt
 
