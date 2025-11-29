@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "C-ADL",
+  "scopeName": "source.cadl",
+  "patterns": [
+    {
+      "comment": "C-ADL Top-level structural keywords",
+      "match": "\\b(components|connectors|causal_links|exogenous|counterfactuals):",
+      "name": "keyword.control.cadl"
+    },
+    {
+      "comment": "Key properties for components and links",
+      "match": "\\b(id|failure_rate|latency|source|target|prob|intervention|query):",
+      "name": "support.type.property-name.cadl"
+    },
+    {
+      "comment": "Probabilistic Distributions (e.g., Bernoulli(0.5))",
+      "match": "\\b(Bernoulli|Normal|Exponential|Uniform|LogNormal)\\b",
+      "name": "support.function.distribution.cadl"
+    },
+    {
+      "comment": "The do-operator for interventions",
+      "match": "do\\(.*?\\)",
+      "name": "keyword.other.do-operator.cadl"
+    },
+    {
+      "comment": "Probability Query P(...)",
+      "match": "P\\(.*?\\)",
+      "name": "variable.language.probability.cadl"
+    },
+    {
+      "comment": "Causal arrow syntax",
+      "match": "->",
+      "name": "keyword.operator.arrow.cadl"
+    },
+    {
+      "comment": "Comments",
+      "match": "#.*$",
+      "name": "comment.line.number-sign.cadl"
+    },
+    {
+      "comment": "Numeric values",
+      "match": "\\b\\d+(\\.\\d+)?(ms|s)?\\b",
+      "name": "constant.numeric.cadl"
+    }
+  ]
+}
