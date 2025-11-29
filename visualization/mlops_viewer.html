@@ -120,6 +120,10 @@
 
         // Edges represent Causal Links from YAML
         const edgesData = [
+            // Functional Pipeline Flow (Missing in previous version)
+            { from: 'data_ingestion', to: 'feature_store', label: 'ingests data', arrows: 'to', color: {color:'#94a3b8', opacity: 0.6} },
+            { from: 'feature_store', to: 'training_gpu', label: 'provides features', arrows: 'to', color: {color:'#94a3b8', opacity: 0.6} },
+
             // Data Drift -> Training Failure (prob: 0.7)
             { from: 'data_drift', to: 'training_gpu', label: 'divergence (0.7)', arrows: 'to' },
             
@@ -157,7 +161,8 @@
                 hierarchical: {
                     direction: 'LR', // Left to Right flow
                     sortMethod: 'directed',
-                    levelSeparation: 200
+                    levelSeparation: 200,
+                    nodeSpacing: 150
                 }
             },
             physics: false, // Static layout for clearer architecture view
