@@ -66,8 +66,8 @@ You can install the .vsix package from the releases folder or build it from sour
 cd ide-extension  
 npm install  
 npm run compile
+# Press F5 in VS Code to launch the extension Development Host
 ```
-\# Press F5 in VS Code to launch the extension Development Host
 
 ## **📖 Usage Example**
 
@@ -86,7 +86,7 @@ components:
 causal_links:  
   - source: auth_service.failure  
     target: ui.login_latency  
-    \# Structural Equation with Intervention  
+    # Structural Equation with Intervention  
     do: do(auth_service.failure=true) -> ui.login_latency=Exponential(8000)
 
 counterfactuals:  
