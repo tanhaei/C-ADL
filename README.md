@@ -55,7 +55,7 @@ C-ADL-Workbench/
 ```
 git clone https://github.com/tanhaei/C-ADL.git
 cd C-ADL/compiler  
-pip install \-r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### **2\. Install the VS Code Extension**
@@ -78,19 +78,19 @@ Create a .cadl or .yaml file to describe your architecture and causal links. Her
 ```
 name: TrainTicket-Causal-Model  
 components:  
-  \- id: auth\_service  
-    failure\_rate: Bernoulli(0.002)  
-  \- id: order\_service  
+  - id: auth_service  
+    failure_rate: Bernoulli(0.002)  
+  - id: order_service  
     latency: Normal(120, 30\) ms
 
-causal\_links:  
-  \- source: auth\_service.failure  
-    target: ui.login\_latency  
+causal_links:  
+  - source: auth_service.failure  
+    target: ui.login_latency  
     \# Structural Equation with Intervention  
-    do: do(auth\_service.failure=true) \-\> ui.login\_latency=Exponential(8000)
+    do: do(auth_service.failure=true) -> ui.login_latency=Exponential(8000)
 
 counterfactuals:  
-  \- id: cf\_analysis\_01  
+  - id: cf_analysis_01  
     intervention: do(payment.available=false)  
     query: P(order.success | do(payment.available=false))
 ```
@@ -100,12 +100,12 @@ counterfactuals:
 Use the CLI to compile and query the model:
 
 ```
-\# Verify structural constraints  
-python cadl\_compiler.py check \--model examples/trainticket.yaml \--backend alloy
+# Verify structural constraints  
+python cadl_compiler.py check --model examples/trainticket.yaml --backend alloy
 
-\# Run probabilistic inference  
-python cadl\_compiler.py query \--model examples/trainticket.yaml \--id cf\_analysis\_01  
-\# Output: P(order.success | do(payment.available=false)) \= 0.024
+# Run probabilistic inference  
+python cadl_compiler.py query --model examples/trainticket.yaml --id cf_analysis_01  
+# Output: P(order.success | do(payment.available=false)) = 0.024
 ```
 
 ## **📊 Evaluation & Benchmarks**
@@ -120,7 +120,7 @@ To reproduce the precision results (83% P@1) reported in the paper:
 
 ```
 cd tests  
-python run\_benchmark\_eval.py \--dataset deathstarbench
+python run_benchmark_eval.py --dataset deathstarbench
 ```
 
 ## **🤝 Contributing**
@@ -128,14 +128,14 @@ python run\_benchmark\_eval.py \--dataset deathstarbench
 Contributions are welcome\! Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
 
 1. Fork the repository  
-2. Create your feature branch (git checkout \-b feature/AmazingFeature)  
-3. Commit your changes (git commit \-m 'Add some AmazingFeature')  
+2. Create your feature branch (git checkout -b feature/AmazingFeature)  
+3. Commit your changes (git commit -m 'Add some AmazingFeature')  
 4. Push to the branch (git push origin feature/AmazingFeature)  
 5. Open a Pull Request
 
 ## **📄 License**
 
-This project is licensed under the MIT License \- see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
 
 ## **🔗 Citation**
 
