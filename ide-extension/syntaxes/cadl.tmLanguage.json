@@ -4,29 +4,29 @@
   "scopeName": "source.cadl",
   "patterns": [
     {
-      "comment": "C-ADL Top-level structural keywords",
-      "match": "\\b(components|connectors|causal_links|exogenous|counterfactuals):",
+      "comment": "C-ADL top-level keywords",
+      "match": "\\b(name|components|connectors|exogenous|causal_links|counterfactuals|description|version):",
       "name": "keyword.control.cadl"
     },
     {
-      "comment": "Key properties for components and links",
-      "match": "\\b(id|failure_rate|latency|source|target|prob|intervention|query):",
+      "comment": "Common property keys",
+      "match": "\\b(id|source|target|prob|do|intervention|query|functional_form|distribution|type|failure|latency|timeout|available):",
       "name": "support.type.property-name.cadl"
     },
     {
-      "comment": "Probabilistic Distributions (e.g., Bernoulli(0.5))",
-      "match": "\\b(Bernoulli|Normal|Exponential|Uniform|LogNormal)\\b",
+      "comment": "Distributions and declared types",
+      "match": "\\b(Bernoulli|Normal|Exponential|Uniform|LogNormal|Boolean|Real|Integer|Categorical)\\b",
       "name": "support.function.distribution.cadl"
     },
     {
-      "comment": "The do-operator for interventions",
-      "match": "do\\(.*?\\)",
+      "comment": "do-operator",
+      "match": "do\\([^\\)]*\\)",
       "name": "keyword.other.do-operator.cadl"
     },
     {
-      "comment": "Probability Query P(...)",
-      "match": "P\\(.*?\\)",
-      "name": "variable.language.probability.cadl"
+      "comment": "Probability and expectation queries",
+      "match": "\\b(P|E)\\([^\\)]*\\)",
+      "name": "variable.language.query.cadl"
     },
     {
       "comment": "Causal arrow syntax",
@@ -40,7 +40,7 @@
     },
     {
       "comment": "Numeric values",
-      "match": "\\b\\d+(\\.\\d+)?(ms|s)?\\b",
+      "match": "\\b\\d+(\\.\\d+)?(ms|s|%)?\\b",
       "name": "constant.numeric.cadl"
     }
   ]

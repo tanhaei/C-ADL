@@ -1,55 +1,58 @@
-name: TrainTicket-Microservices-Benchmark
-version: 1.2
+name: TrainTicket-Causal-Model
+version: 2.0
+
 description: >
-  A simplified causal model of the TrainTicket benchmark focusing on 
-  the authentication and booking flow failures.
+  Benchmark-aligned TrainTicket excerpt with typed architectural properties,
+  one exogenous confounder, and executable intervention/counterfactual queries.
 
 components:
-  - id: ts_auth_service
-    type: Service
-    failure_rate: Bernoulli(0.05) # 5% intrinsic failure rate
-    
-  - id: ts_order_service
-    type: Service
-    failure_rate: Bernoulli(0.01)
-    
-  - id: ts_ui_dashboard
-    type: Frontend
-    latency: Normal(200, 50) ms
+  - id: auth
+    failure: Bernoulli(0.002)
+    latency: Normal(120,30) ms
 
-  - id: database_primary
-    type: Infrastructure
-    failure_rate: Bernoulli(0.001)
+  - id: order
+    db_timeout: Bernoulli(0.01)
+    failure: Bernoulli(0.001)
+
+  - id: ui
+    login_latency: Real ms
+    timeout: Bernoulli(0.02)
+
+  - id: payment
+    available: Bernoulli(0.999)
 
 exogenous:
-  - id: network_congestion
-    distribution: Bernoulli(0.1)
-    description: "External network latency spikes affecting all inter-service calls"
+  - id: network_partition
+    distribution: Bernoulli(0.0005)
 
 causal_links:
-  # Auth failure causes Login Latency spikes
-  - source: ts_auth_service.failure
-    target: ts_ui_dashboard.login_latency
-    description: "If Auth fails, UI retries cause latency"
+  - source: network_partition
+    target: order.db_timeout
+    prob: 0.70
+    description: Shared network impairment drives downstream DB timeouts.
+
+  - source: auth.failure
+    target: ui.timeout
     prob: 0.95
+    description: Authentication retries push the UI into timeout.
 
-  # DB failure causes Order Service failure
-  - source: database_primary.failure
-    target: ts_order_service.failure
-    do: do(database_primary.failure=1) -> ts_order_service.failure=1
+  - source: order.db_timeout
+    target: order.failure
+    prob: 0.90
 
-  # Congestion affects Auth (Confounder)
-  - source: network_congestion
-    target: ts_auth_service.failure
-    prob: 0.3
+  - source: payment.available
+    target: order.failure
+    prob: 0.05
+    description: Payment availability weakly protects against order failures.
 
-  # Congestion affects Order (Confounder)
-  - source: network_congestion
-    target: ts_order_service.failure
-    prob: 0.4
+  - source: auth.failure
+    target: ui.login_latency
+    do: do(auth.failure=true) -> ui.login_latency=Exponential(8000)
 
 counterfactuals:
-  - id: cf_incident_2024_08
-    description: "Would the UI have timed out if we had scaled the Auth service?"
-    intervention: do(ts_auth_service.capacity=high)
-    query: P(ts_ui_dashboard.timeout | do(ts_auth_service.capacity=high))
+  - id: q_ui_timeout_if_auth_fails
+    query: P(ui.timeout | do(auth.failure=true))
+
+  - id: cf_auth_healthy
+    intervention: do(auth.failure=false)
+    query: P(ui.timeout | auth.failure=true)

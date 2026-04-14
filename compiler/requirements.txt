@@ -1,0 +1,4 @@
+pyyaml>=6.0
+networkx>=3.0
+pgmpy>=0.1.24
+numpy>=1.24
